@@ -17,7 +17,13 @@ embedding model, llm_service.py talks to Groq. Later, when /explain and
 
 import chromadb
 from pypdf import PdfReader
-from sentence_transformers import SentenceTransformer
+# NOTE: sentence_transformers is deliberately NOT imported at the top of
+# this file anymore. Importing it pulls in PyTorch, which is heavy enough
+# that just STARTING the app used to exceed Render's free-tier 512MB RAM
+# limit -- before a single request was ever made. Moving the import
+# inside _get_embedding_model() means PyTorch only loads into memory the
+# first time something ACTUALLY needs an embedding (upload, or a query
+# once notes exist), not unconditionally at startup.
 
 # Persistent client -- stores vectors on disk in ./chroma_db so uploaded
 # notes survive a server restart. Without this, you'd have to re-upload
@@ -40,10 +46,23 @@ collection = chroma_client.get_or_create_collection(
 # "top match" even though it wasn't a genuinely useful match.
 MIN_SIMILARITY = 0.3
 
-# Local, open-source embedding model (this is the Q8 tradeoff in practice):
-# no API key, no per-call cost, runs on your own machine. Downloads once
-# (~80MB) on first run, then reused from local cache after that.
-embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+# Lazy-loaded singleton -- starts as None, gets created on first real use.
+_embedding_model = None
+
+
+def _get_embedding_model():
+    """
+    Loads the embedding model (and, implicitly, PyTorch) on first call
+    only, then reuses the same loaded model for every call after that in
+    this process's lifetime. This is the actual fix for the Render OOM-
+    on-startup issue -- endpoints that never touch RAG (like a plain
+    /explain with no notes uploaded) never trigger this load at all.
+    """
+    global _embedding_model
+    if _embedding_model is None:
+        from sentence_transformers import SentenceTransformer
+        _embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+    return _embedding_model
 
 
 def extract_text_from_pdf(file_stream) -> str:
@@ -90,7 +109,7 @@ def embed_and_store(chunks: list, source_name: str):
     unique ID, and metadata (here: which file it came from, and its
     position) -- all four pieces, not just the raw text.
     """
-    embeddings = embedding_model.encode(chunks).tolist()
+    embeddings = _get_embedding_model().encode(chunks).tolist()
     ids = [f"{source_name}_chunk_{i}" for i in range(len(chunks))]
     metadatas = [
         {"source": source_name, "chunk_index": i} for i in range(len(chunks))
@@ -131,7 +150,7 @@ def retrieve_relevant_chunks(query: str, top_k: int = 3) -> list:
         return []
     safe_top_k = min(top_k, available)
 
-    query_embedding = embedding_model.encode([query]).tolist()
+    query_embedding = _get_embedding_model().encode([query]).tolist()
     results = collection.query(
         query_embeddings=query_embedding,
         n_results=safe_top_k,
