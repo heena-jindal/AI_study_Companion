@@ -9,6 +9,8 @@
 
 A backend-only AI study tool built to learn and demonstrate the modern GenAI stack end to end — LLM basics, structured output, RAG, persistence, agentic tool-calling, and evaluation. No frontend yet by design, built to be tested directly via the API to keep the focus on the AI engineering. 🚀
 
+**🔗 Live API:** [ai-study-companion-m5qc.onrender.com](https://ai-study-companion-m5qc.onrender.com) *(free-tier hosting — see [Deployment](#️-deployment--known-limitations) for what does and doesn't work live)*
+
 ---
 
 ## ✨ What it does
