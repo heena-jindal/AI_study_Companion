@@ -1,0 +1,8 @@
+.env
+venv/
+__pycache__/
+*.pyc
+chroma_db/
+study_companion.db
+agent_decisions.log
+.DS_Store
