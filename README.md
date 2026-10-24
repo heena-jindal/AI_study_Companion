@@ -9,7 +9,7 @@
 
 A backend-only AI study tool built to learn and demonstrate the modern GenAI stack end to end — LLM basics, structured output, RAG, persistence, agentic tool-calling, and evaluation. No frontend yet by design, built to be tested directly via the API to keep the focus on the AI engineering. 🚀
 
-**🔗 Live API:** [ai-study-companion-m5qc.onrender.com](https://ai-study-companion-m5qc.onrender.com) *(free-tier hosting — see [Deployment](#️-deployment--known-limitations) for what does and doesn't work live)*
+**🔗 Live API:** [ai-study-companion-m5qc.onrender.com](https://ai-study-companion-m5qc.onrender.com) *(free-tier hosting — see [Deployment & Known Limitations](#️-deployment--known-limitations))*
 
 ---
 
@@ -55,6 +55,9 @@ python app.py
 ---
 
 ## 📡 API Reference
+
+> Examples below use PowerShell/Windows syntax. On macOS/Linux, use the `curl` equivalents, e.g.
+> `curl -X POST http://127.0.0.1:5000/explain -H "Content-Type: application/json" -d '{"topic": "types of AI"}'`
 
 **📤 Upload notes for RAG grounding**
 ```powershell
@@ -108,9 +111,15 @@ python tests/test_faithfulness.py
 
 ---
 
-## ☁️ Deployment
+## ☁️ Deployment & Known Limitations
 
 Includes a `Procfile` for [Render](https://render.com) (`gunicorn app:app`). Set `GROQ_API_KEY` as an environment variable in the hosting platform's dashboard — `.env` is gitignored and won't be present on the server.
+
+**Known limitations of the free-tier demo**
+
+- The first request after idle time can take about a minute while the service wakes up.
+- Free-tier disks are typically ephemeral, so uploaded notes (ChromaDB) and quiz history (SQLite) may reset when the service restarts. For persistence, run it locally or attach a persistent disk.
+- There is no frontend by design; use the API examples above.
 
 ---
 
